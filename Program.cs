@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,16 +17,21 @@ namespace Acd
 {
     internal class Program
     {
-        const string file = "E:\\temp1\\1.dwg";
-
+        const string input_filename = "..\\..\\sample_files\\1.dwg";
+        const string output_filename = "..\\..\\sample_files\\1.pdf";
+        const double pi = 3.14159265358979;
 
         static void Main(string[] args)
         {
             CadDocument doc;
-            using (DwgReader reader = new DwgReader(file))
+            using (DwgReader reader = new DwgReader(input_filename))
             {
                 doc = reader.Read();
             }
+            /*using (DxfReader reader=new DxfReader(input_filename))
+            {
+                doc = reader.Read();
+            }*/
 
             PdfDocument document = new PdfDocument();
 
@@ -34,19 +40,15 @@ namespace Acd
             //Pagesize=A4
             PageSize[] pageSizes = (PageSize[])Enum.GetValues(typeof(PageSize));
             PdfPage page = document.AddPage();
-            //page.Size = pageSizes[5];
+            //page.Size = pageSizes[5];//******A4 case
             page.Size = pageSizes[1];
-            var vh = page.Height;
-            //Console.WriteLine($"Page size: {pageSize}");
+            var vh = page.Height;       
 
             XGraphics gfx = XGraphics.FromPdfPage(page);
-            //gfx.DrawString(pageSize.ToString(), font, XBrushes.DarkRed, new XRect(0, 0, page.Width, page.Height), XStringFormats.Center);
-            
-            
+            //gfx.DrawString(page.Size.ToString(), font, XBrushes.DarkRed, new XRect(0, 0, page.Width, page.Height), XStringFormats.Center);
+                      
             XColor mcolor = new XColor();
             XPen pdfpen = new XPen(mcolor, 1);
-            //gfx.DrawLine(pdfpen, 0, 0, 100, 100); gfx.DrawLine(pdfpen, 50, 0, 500, 100);
-            //gfx.DrawLine(pdfpen, 100,200, 700, 0);
 
             Line kline = new Line();
             Arc arc = new Arc();
@@ -54,10 +56,11 @@ namespace Acd
             XRect xRect= new XRect();
             Circle circle = new Circle();
             Hatch hatch = new Hatch();
+            Insert insert= new Insert();    
 
             LwPolyline polyline = new LwPolyline();
-            //XPoint[] points= new XPoint[5];
-
+            //gfx.DrawRectangle(pdfpen, 0, 0, 250, 250);
+            //gfx.DrawArc(pdfpen, 0, 0, 250, 250, 90, 140);
 
             //Console.WriteLine($"---A----{doc.BlockRecords.ObjectName}");
             foreach (var item in doc.BlockRecords)
@@ -72,10 +75,10 @@ namespace Acd
                         Console.WriteLine($"\t\t{element.Key}: {element.Count()}");
                         foreach (var e in element)
                         {
-                            Console.WriteLine($"--type---{e.ObjectType}: {e.ToString()}");
+                            Console.WriteLine($"\n\t--type---{e.ObjectType}: {e.ToString()}");
                             if (e.ObjectType.ToString() == "CIRCLE")
                             {
-                                Console.Write("\n--LineDraw--");
+                                Console.Write("\n\t\t--DrawCircle--");
                                 circle = (Circle)e;
                                 xRect.X = circle.Center.X + circle.Radius;
                                 xRect.Y = vh-circle.Center.Y - circle.Radius;
@@ -86,52 +89,57 @@ namespace Acd
                             }
                             if (e.ObjectType.ToString() == "LINE")
                             {
-                                Console.Write("\n--LineDraw--");
+                                Console.Write("\n\t\t--LineDraw--");
                                 kline = (Line)e;
-                                gfx.DrawLine(pdfpen, kline.StartPoint.X, vh-kline.StartPoint.Y, kline.EndPoint.X, vh-kline.EndPoint.Y);                    
+                                double ksx = kline.StartPoint.X;
+                                double ksy = vh-kline.StartPoint.Y;
+                                double kex = kline.EndPoint.X;
+                                double key = vh-kline.EndPoint.Y;
+
+                                Console.WriteLine("\n\tStartPointX: " + ksx + "\n\tStartPointY: " + ksy + "\n\tEndpiontX: " + kex + "\n\tEndPointY: " + key);
+                                gfx.DrawLine(pdfpen, ksx, ksy, kex, key);                    
                             }
                             if (e.ObjectType.ToString() == "ARC")
                             {
-                                Console.Write("\n--ARCDraw--");
-                                arc=(Arc)e;
-                                xRect.X = arc.Center.X + arc.Radius ;
-                                xRect.Y=vh-arc.Center.Y - arc.Radius ;
-                                xRect.Width = arc.Radius*2;
-                                xRect.Height = arc.Radius*2;
-                                //arc.
-                                Console.WriteLine(arc.Radius + " " + arc.Center);
-                                //Console.WriteLine($"{xRect.X}-----{xRect.Y}-------{xRect.Width}---------{xRect.Height}");
-                                gfx.DrawArc(pdfpen, xRect, arc.StartAngle, arc.EndAngle);
+                                Console.Write("\n\t\t--DrawArc--");
+                                arc = (Arc)e;
+                                xRect.X = arc.Center.X + arc.Radius;
+                                xRect.Y = vh - arc.Center.Y - arc.Radius;
+                                xRect.Width = arc.Radius * 2;
+                                xRect.Height = arc.Radius * 2;
+                                double stA =360- arc.StartAngle / pi * 180;
+                                double edA =360- arc.EndAngle / pi * 180;
+                                Console.WriteLine("startangle:------"+ stA + "\nendalgle----------- "+ edA + "\nradius----------"+arc.Radius + "\ncenter-------- " + arc.Center);
+                                gfx.DrawArc(pdfpen, xRect, stA, edA );
+                                
                             }
-                            if (e.ObjectType.ToString() == "LWPOLYLINE")
+                            /*if (e.ObjectType.ToString() == "LWPOLYLINE")
                             {
-                                Console.Write("\n--LWP--");
+                                Console.Write("\n\t\t--DrawLWP--");
                                 //kline = (Line)e;
                                 polyline = (LwPolyline)e;
                                 Console.WriteLine(polyline.Vertices.Count);
-                                foreach(LwPolyline.Vertex vet in polyline.Vertices)
+                                foreach (LwPolyline.Vertex vet in polyline.Vertices)
                                 {
                                     //vet.Bulge.
                                     //Console.WriteLine($"\n\t----vet-----+{vet.ToString()}");
                                 }
-                                //Console.WriteLine(polyline.Vertices.
 
                                 //polyline.Vertices.ToArray();
                                 //XPoint[] points = new XPoint[polyline.Vertices.Count];
                                 //int i = 0;
                                 //foreach (XPoint pt in points)
                                 //{
-                                   
 
                                 //}
-                                
+
                                 //points =polyline.Vertices.ToArray();
                                 //gfx.DrawLine(pdfpen, kline.StartPoint.X, kline.StartPoint.Y, kline.EndPoint.X, kline.EndPoint.Y);
                                 //gfx.drawpoly
-                            }
-                            if (e.ObjectType.ToString() == "HATCH")
+                            }*/
+                            /*if (e.ObjectType.ToString() == "HATCH")
                             {
-                                Console.Write("\n--HatchDraw--");
+                                Console.Write("\n\t\t--HatchDraw--");
                                 hatch = (Hatch)e;
                                 //xRect.X = hatch.SeedPoints.Count
                                 //xRect.Y = vh - circle.Center.Y - circle.Radius;
@@ -139,64 +147,40 @@ namespace Acd
                                 //xRect.Height = circle.Radius * 2;
                                 Console.WriteLine("--\t--" + hatch.SeedPoints.Count);
                                 //gfx.DrawEllipse(pdfpen, xRect);
-                            }
-                            if (e.ObjectType.ToString() == "HATCH")
+                            }*/
+                            /*if (e.ObjectType.ToString() == "INSERT")
                             {
                                 Console.Write("\n--HatchDraw--");
-                                hatch = (Hatch)e;
+                                insert = (Insert)e;
                                 //xRect.X = hatch.SeedPoints.Count
                                 //xRect.Y = vh - circle.Center.Y - circle.Radius;
                                 //.Width = circle.Radius * 2;
                                 //xRect.Height = circle.Radius * 2;
-                                Console.WriteLine("--\t--" + hatch.SeedPoints.Count);
+                                Console.WriteLine("--\t--" + insert.InsertPoint.ToString());
                                 //gfx.DrawEllipse(pdfpen, xRect);
-                            }
-                            if (e.ObjectType.ToString() == "MTEXT")
-                             {
-                                 Console.Write("\n------TEXTinput--------");
-                                 text=(MText)e;
-                                 MText text_conternt= new MText();
-                                 text_conternt.AdditionalText=text.AdditionalText;
+                            }*/
+                            /*if (e.ObjectType.ToString() == "MTEXT")
+                            {
+                                Console.Write("\n\t\t------TEXTinput--------");
+                                text = (MText)e;
+                                MText text_conternt = new MText();
+                                text_conternt.AdditionalText = text.AdditionalText;
 
+                                string ctk = text.Value;
+                                XPoint point = new XPoint(text.InsertPoint.X, vh - text.InsertPoint.Y);
+                                XSize size = new XSize(text.RectangleWitdth + 10, text.RectangleHeight + 10);
 
-                                 //text.MatchProperties(e);
-                                 string ctk=text.Value;
-                                 XPoint point= new XPoint(text.InsertPoint.X, vh-text.InsertPoint.Y);
-                                 XSize size= new XSize(text.RectangleWitdth+10, text.RectangleHeight+10);
-
-                                 gfx.DrawString(ctk, font, XBrushes.Black, new XRect(point,size), XStringFormats.Center);
-                                /*Console.WriteLine("\n\n**********");
-                                 Console.WriteLine(ctk);
-                                 //Console.WriteLine("\n");
-                                 Console.WriteLine(point.ToString());
-                                 //Console.WriteLine("\n");
-                                 Console.WriteLine(size.ToString());
-                                 Console.WriteLine("\n**********\n");*/
-
-                             }
-
-
-                            //gfx.DrawLine(e.line)
-                            //Console.WriteLine(e.Document.);
+                                gfx.DrawString(ctk, font, XBrushes.Black, new XRect(point, size), XStringFormats.Center);
+                            }*/
                         }
-
-                        //Console.WriteLine($"\t\t{e.GetType().ToString()}");
                     }
+                        
                 }
             }
 
-            //if (pageSize == PageSize.Undefined)  //exit;
-            // One page in Portrait...
-
-
-
-
-
             // Save the document...
 
-            const string filename = "E:\\temp\\result.pdf";
-
-            document.Save(filename);
+            document.Save(output_filename);
 
             // ...and start a viewer.
             //   Process.Start(filename);
