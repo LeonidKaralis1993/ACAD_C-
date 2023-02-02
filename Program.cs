@@ -42,6 +42,7 @@ namespace Acd
             PdfPage page = document.AddPage();
             //page.Size = pageSizes[5];//******A4 case
             page.Size = pageSizes[1];
+            
             var vh = page.Height;       
 
             XGraphics gfx = XGraphics.FromPdfPage(page);
@@ -62,6 +63,8 @@ namespace Acd
             //gfx.DrawRectangle(pdfpen, 0, 0, 250, 250);
             //gfx.DrawArc(pdfpen, 0, 0, 250, 250, 90, 140);
 
+            //int arck = 4;
+
             //Console.WriteLine($"---A----{doc.BlockRecords.ObjectName}");
             foreach (var item in doc.BlockRecords)
             {
@@ -80,8 +83,8 @@ namespace Acd
                             {
                                 Console.Write("\n\t\t--DrawCircle--");
                                 circle = (Circle)e;
-                                xRect.X = circle.Center.X + circle.Radius;
-                                xRect.Y = vh-circle.Center.Y - circle.Radius;
+                                xRect.X = circle.Center.X - circle.Radius+200;
+                                xRect.Y = vh-circle.Center.Y - circle.Radius-200;
                                 xRect.Width = circle.Radius *2;
                                 xRect.Height = circle.Radius*2;
                                 Console.WriteLine("--\t--"+xRect.ToString());
@@ -91,10 +94,10 @@ namespace Acd
                             {
                                 Console.Write("\n\t\t--LineDraw--");
                                 kline = (Line)e;
-                                double ksx = kline.StartPoint.X;
-                                double ksy = vh-kline.StartPoint.Y;
-                                double kex = kline.EndPoint.X;
-                                double key = vh-kline.EndPoint.Y;
+                                double ksx = kline.StartPoint.X+200;
+                                double ksy = vh-kline.StartPoint.Y-200;
+                                double kex = kline.EndPoint.X+200;
+                                double key = vh-kline.EndPoint.Y-200;
 
                                 Console.WriteLine("\n\tStartPointX: " + ksx + "\n\tStartPointY: " + ksy + "\n\tEndpiontX: " + kex + "\n\tEndPointY: " + key);
                                 gfx.DrawLine(pdfpen, ksx, ksy, kex, key);                    
@@ -102,21 +105,40 @@ namespace Acd
                             if (e.ObjectType.ToString() == "ARC")
                             {
                                 Console.Write("\n\t\t--DrawArc--");
+
+
+                                double stA,edA;
+                                double goA;
                                 arc = (Arc)e;
-                                xRect.X = arc.Center.X + arc.Radius;
-                                xRect.Y = vh - arc.Center.Y - arc.Radius;
+                                xRect.X = arc.Center.X - arc.Radius + 200;
+                                xRect.Y = vh - arc.Center.Y - arc.Radius - 200;
                                 xRect.Width = arc.Radius * 2;
                                 xRect.Height = arc.Radius * 2;
-                                double stA =360- arc.StartAngle / pi * 180;
-                                double edA =360- arc.EndAngle / pi * 180;
-                                Console.WriteLine("startangle:------"+ stA + "\nendalgle----------- "+ edA + "\nradius----------"+arc.Radius + "\ncenter-------- " + arc.Center);
-                                gfx.DrawArc(pdfpen, xRect, stA, edA );
+
+                                if (arc.EndAngle < arc.StartAngle)
+                                {
+                                    Console.WriteLine("\n\n---working_too---------\n\n");
+                                    stA = 360 - arc.StartAngle / pi * 180;
+                                    gfx.DrawArc(pdfpen, xRect, 0, stA);
+                                    edA = 360 - arc.EndAngle / pi * 180;
+                                    gfx.DrawArc(pdfpen, xRect, edA, 359.999999 - edA);
+                                    
+                                }
+                                else {
+                                    stA = 360 - arc.EndAngle / pi * 180;
+                                    goA = 360 - arc.StartAngle / pi * 180 - stA;
+
+                                    Console.WriteLine("\n\torgingal_stA:  " + arc.StartAngle / pi * 180 + "\t\toriginal_edA:  " + arc.EndAngle / pi * 180);
+                                    Console.WriteLine("startangle:------" + stA + "\tgoalgle----------- " + goA + "\nradius----------" + arc.Radius + "\ncenter-------- " + arc.Center);
+                                    gfx.DrawArc(pdfpen, xRect, stA, goA);
+          
+                               }     
                                 
                             }
                             /*if (e.ObjectType.ToString() == "LWPOLYLINE")
                             {
                                 Console.Write("\n\t\t--DrawLWP--");
-                                //kline = (Line)e;
+                                
                                 polyline = (LwPolyline)e;
                                 Console.WriteLine(polyline.Vertices.Count);
                                 foreach (LwPolyline.Vertex vet in polyline.Vertices)
@@ -124,20 +146,17 @@ namespace Acd
                                     //vet.Bulge.
                                     //Console.WriteLine($"\n\t----vet-----+{vet.ToString()}");
                                 }
-
                                 //polyline.Vertices.ToArray();
                                 //XPoint[] points = new XPoint[polyline.Vertices.Count];
                                 //int i = 0;
                                 //foreach (XPoint pt in points)
                                 //{
-
                                 //}
-
                                 //points =polyline.Vertices.ToArray();
                                 //gfx.DrawLine(pdfpen, kline.StartPoint.X, kline.StartPoint.Y, kline.EndPoint.X, kline.EndPoint.Y);
                                 //gfx.drawpoly
                             }*/
-                            /*if (e.ObjectType.ToString() == "HATCH")
+                            if (e.ObjectType.ToString() == "HATCH")
                             {
                                 Console.Write("\n\t\t--HatchDraw--");
                                 hatch = (Hatch)e;
@@ -145,9 +164,9 @@ namespace Acd
                                 //xRect.Y = vh - circle.Center.Y - circle.Radius;
                                 //.Width = circle.Radius * 2;
                                 //xRect.Height = circle.Radius * 2;
-                                Console.WriteLine("--\t--" + hatch.SeedPoints.Count);
+                                Console.WriteLine("--\t" + hatch.SeedPoints.Count);
                                 //gfx.DrawEllipse(pdfpen, xRect);
-                            }*/
+                            }
                             /*if (e.ObjectType.ToString() == "INSERT")
                             {
                                 Console.Write("\n--HatchDraw--");
