@@ -55,6 +55,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="p_array.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

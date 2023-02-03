@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,8 +11,11 @@ using ACadSharp.Entities;
 using ACadSharp.IO;
 using ACadSharp.Tables;
 using PdfSharp;
+using PdfSharp.Charting;
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
+using PdfSharp.Pdf.Content.Objects;
+
 //test change
 //this is dev branch test
 
@@ -51,7 +55,10 @@ namespace Acd
             //gfx.DrawString(page.Size.ToString(), font, XBrushes.DarkRed, new XRect(0, 0, page.Width, page.Height), XStringFormats.Center);
                       
             XColor mcolor = new XColor();
-            XPen pdfpen = new XPen(mcolor, 1);
+            XPen pdfpen = new XPen(mcolor, 0.1);
+            XBrush xBrush = new XSolidBrush(mcolor);
+            
+
 
             Line kline = new Line();
             Arc arc = new Arc();
@@ -62,12 +69,7 @@ namespace Acd
             Insert insert= new Insert();    
 
             LwPolyline polyline = new LwPolyline();
-            //gfx.DrawRectangle(pdfpen, 0, 0, 250, 250);
-            //gfx.DrawArc(pdfpen, 0, 0, 250, 250, 90, 140);
-
-            //int arck = 4;
-
-            //Console.WriteLine($"---A----{doc.BlockRecords.ObjectName}");
+            
             foreach (var item in doc.BlockRecords)
             {
                 //Console.WriteLine($"--------B-------\tName: {item.Name}");
@@ -107,8 +109,6 @@ namespace Acd
                             if (e.ObjectType.ToString() == "ARC")
                             {
                                 Console.Write("\n\t\t--DrawArc--");
-
-
                                 double stA,edA;
                                 double goA;
                                 arc = (Arc)e;
@@ -119,7 +119,6 @@ namespace Acd
 
                                 if (arc.EndAngle < arc.StartAngle)
                                 {
-                                    Console.WriteLine("\n\n---working_too---------\n\n");
                                     stA = 360 - arc.StartAngle / pi * 180;
                                     gfx.DrawArc(pdfpen, xRect, 0, stA);
                                     edA = 360 - arc.EndAngle / pi * 180;
@@ -129,11 +128,7 @@ namespace Acd
                                 else {
                                     stA = 360 - arc.EndAngle / pi * 180;
                                     goA = 360 - arc.StartAngle / pi * 180 - stA;
-
-                                    Console.WriteLine("\n\torgingal_stA:  " + arc.StartAngle / pi * 180 + "\t\toriginal_edA:  " + arc.EndAngle / pi * 180);
-                                    Console.WriteLine("startangle:------" + stA + "\tgoalgle----------- " + goA + "\nradius----------" + arc.Radius + "\ncenter-------- " + arc.Center);
-                                    gfx.DrawArc(pdfpen, xRect, stA, goA);
-          
+                                    gfx.DrawArc(pdfpen, xRect, stA, goA);          
                                }     
                                 
                             }
@@ -162,12 +157,36 @@ namespace Acd
                             {
                                 Console.Write("\n\t\t--HatchDraw--");
                                 hatch = (Hatch)e;
-                                //xRect.X = hatch.SeedPoints.Count
-                                //xRect.Y = vh - circle.Center.Y - circle.Radius;
-                                //.Width = circle.Radius * 2;
-                                //xRect.Height = circle.Radius * 2;
-                                Console.WriteLine("--\t" + hatch.SeedPoints.Count);
-                                //gfx.DrawEllipse(pdfpen, xRect);
+
+                                foreach(Hatch.BoundaryPath mpath in hatch.Paths)
+                                {
+                                    foreach(var pe in mpath.Edges)
+                                    {
+                                        Console.WriteLine("\n\t\t\t"+pe.Type);
+                                        if (pe.Type.ToString() == "Polyline")
+                                        {
+                                            Hatch.BoundaryPath.Polyline polyline1;
+                                            
+                                            polyline1 = (Hatch.BoundaryPath.Polyline)pe;
+                                            //polyline1.Vertices
+                                            int count = polyline1.Vertices.Count;
+                                            Console.WriteLine("\n" + count);
+                                            int index = 0;
+
+                                            XPoint[] xpoints = new XPoint[count];
+                                            foreach (CSMath.XY point in polyline1.Vertices)
+                                            {
+                                                xpoints[index].X = 200 + point.X;
+                                                xpoints[index].Y = vh - point.Y - 200;
+                                                Console.WriteLine("\n\t" + point.X + "\t\t" + point.Y);
+                                                index++;
+                                            }
+                                            gfx.DrawPolygon(pdfpen, xBrush, xpoints,XFillMode.Winding);
+                                            //gfx.DrawClosedCurve(xBrush, xpoints);                                            
+                                        }                                       
+                                    }                                   
+                                }
+                               
                             }
                             /*if (e.ObjectType.ToString() == "INSERT")
                             {
@@ -210,61 +229,5 @@ namespace Acd
 
         }
 
-        /// <summary>
-        /// Logs in the console the document information
-        /// </summary>
-        /// <param name="doc"></param>
-        /*static void ExploreDocument(CadDocument doc)
-        {
-            *//*            Console.WriteLine();
-                        Console.WriteLine("SUMMARY INFO:");
-                        Console.WriteLine($"\tTitle: {doc.SummaryInfo.Title}");
-                        Console.WriteLine($"\tSubject: {doc.SummaryInfo.Subject}");
-                        Console.WriteLine($"\tAuthor: {doc.SummaryInfo.Author}");
-                        Console.WriteLine($"\tKeywords: {doc.SummaryInfo.Keywords}");
-                        Console.WriteLine($"\tComments: {doc.SummaryInfo.Comments}");
-                        Console.WriteLine($"\tLastSavedBy: {doc.SummaryInfo.LastSavedBy}");
-                        Console.WriteLine($"\tRevisionNumber: {doc.SummaryInfo.RevisionNumber}");
-                        Console.WriteLine($"\tHyperlinkBase: {doc.SummaryInfo.HyperlinkBase}");
-                        Console.WriteLine($"\tCreatedDate: {doc.SummaryInfo.CreatedDate}");
-                        Console.WriteLine($"\tModifiedDate: {doc.SummaryInfo.ModifiedDate}");*/
-
-        /*            ExploreTable(doc.AppIds);*//*
-        //ExploreTable(doc.BlockRecords);
-        *//*         ExploreTable(doc.DimensionStyles);
-                   ExploreTable(doc.Layers);
-                   ExploreTable(doc.LineTypes);
-                   ExploreTable(doc.TextStyles);
-                   ExploreTable(doc.UCSs);
-                   ExploreTable(doc.Views);
-                   ExploreTable(doc.VPorts);*//*
-        //doc.BlockRecords.Count
-
-        *//*            foreach (var e in doc.BlockRecords.GroupBy(i => i.GetType().FullName))
-                    {
-                        Console.WriteLine($"\t\t{e.Key}: {e.Count()}");
-                    }*//*
-
-
-    }*/
-
-        /*static void ExploreTable<T>(Table<T> table)
-            where T : TableEntry
-        {
-            *//*Console.WriteLine($"------------{table.ObjectName}");
-            foreach (var item in table)
-            {
-                Console.WriteLine($"\tName: {item.Name}");
-
-                if (item.Name == BlockRecord.ModelSpaceName && item is BlockRecord model)
-                {
-                    Console.WriteLine($"\t\tEntities in the model:");
-                    foreach (var e in model.Entities.GroupBy(i => i.GetType().FullName))
-                    {
-                        Console.WriteLine($"\t\t{e.Key}: {e.Count()}");
-                    }
-                }
-            }*//*
-        }*/
     }
 }
